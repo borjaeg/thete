@@ -10,7 +10,6 @@ class Annotation:
 		self.condicionamientosGeneralesAnotados = []
 		for f in files:
 			if (f.startswith('1') or f.startswith('2')):
-				print("Processing %s" % f.split(".")[0])
 				self.loadDeontic(f)
 
 	def loadDeontic(self, f):
