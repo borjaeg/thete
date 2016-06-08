@@ -29,7 +29,7 @@ def preCleanSentence(sentence):
 def postCleanSentence(sentence):
 	""" """
 	if re.match(".*\n\n030314\n\n.*", sentence):
-		print "CATCHED"
+		print("CATCHED")
 		if sentence.split('.')[0] == sentence:
 			return sentence.split('\n')[0]
 		else:
