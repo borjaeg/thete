@@ -29,8 +29,9 @@ def load_results():
     try:
         sql = \
         """
-        SELECT id, n_experiment, nlp, algorithm, cost_ratio, prec AS `precision`, recall
+        SELECT nlp, algorithm, cost_ratio, AVG(prec) AS `precision`, AVG(recall) recall
         FROM results
+        GROUP BY nlp, algorithm, cost_ratio
         """
         results = pd.read_sql(sql, connection)
     except Exception as e:
@@ -93,14 +94,33 @@ def get_best_by_cost(data, important_metric, algorithm, plot_metric):
          (data["n_experiment"] == best_rf_experiment) &
          (data["nlp"] == best_rf_nlp)][plot_metric].values), algorithm, best_rf_nlp
 
-def are_different(data1, data2, threshold = 0.05, parametric=False):
+def are_different(data, factor, metric, threshold = 0.05):
     
-    if not parametric:
-        z_stat, p_val = wilcoxon(data1, data2, zero_method='wilcox', correction=False)
-    else:
-        z_stat, p_val = ttest_ind(data1, data2, equal_var=False)
+    results = []
+    tested_values = []
     
-    if p_val < threshold: # 0.05
-        print("Statistically significant different results")
-    else:
-        print("Statistically non-significant different results")
+    values = data[factor].unique()
+
+    for value in values:
+      results.append(data.loc[(data[factor] == value)][metric])
+    
+    for value, result in zip(values,results):
+        print(value, result.mean())
+        if mstats.normaltest(result)[1] < 0.05:
+            parametric = False
+    print()
+        
+    for value, result in zip(values,results):
+        for value2, result2 in zip(values, results):
+            if not value == value2 and value2 not in tested_values:
+                tested_values.append(value)
+                if not parametric:
+                    z_stat, p_val = wilcoxon(result, result2, zero_method='wilcox', correction=False)
+                else:
+                    z_stat, p_val = ttest_ind(result, result2, equal_var=False)
+                if p_val < threshold: # 0.05
+                    print("Statistically significant different results between %s and %s" 
+                          % (value, value2))
+                else:
+                    print("Statistically NON-significant different results between %s and %s" 
+                          % (value, value2))
