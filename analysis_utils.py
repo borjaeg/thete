@@ -40,7 +40,7 @@ def load_results():
         
     return results
 
-def get_best(algorithm):
+def get_best(data, algorithm):
     accepted_results = data.loc[(data["algorithm"] == algorithm) & 
          (data["recall"] == data.loc[(data["algorithm"] == 
                                       algorithm)]["recall"].max())]
@@ -80,7 +80,7 @@ def plot_image(x, results, title="title", ylim = [0, 1.02], xlim = [2, 50.5],
     save_image(plt,'../images/', file_name)
     plt.show()
     
-def get_best_by_cost(important_metric, algorithm, plot_metric):
+def get_best_by_cost(data, important_metric, algorithm, plot_metric):
     best_rf_experiment = data.loc[(data["algorithm"] == algorithm) & 
          (data[important_metric] == data.loc[(data["algorithm"] == 
                                       algorithm)][important_metric].max())]["n_experiment"].values[0]
