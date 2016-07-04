@@ -5,109 +5,137 @@ import re
 import itertools
 
 # Data Science
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-# Plotting
-from matplotlib.markers import MarkerStyle
-from PIL import Image
 
 from export_results import *
 from utils import *
 from scipy.stats import *
 import pymysql.cursors
 
+labels = ["1:1","1:2","1:4","1:6","1:10","1:25", "1:50", r"1:$10^2$", r"1:$10^3$", r"1:$10^6$"]
+costs = np.array([2, 3, 4, 6, 10, 25, 50, 100, 1000, 1000000])
+axis_costs = np.arange(1,11,1)
+cxlim = [0.8, 10.15]
+
 def load_results():
 
     results = []
+    data = {}
     connection = pymysql.connect(host='localhost',
                              user='root',
                              password='',
                              db='agriculture_experiments',
                              charset='utf8')
 
+
+    data["denormalized"] =[]
+    data["grouped"] = [] 
+
     try:
+        sql = \
+        """
+        SELECT nlp, algorithm, cost_ratio, prec AS `precision`, recall -- AVG(prec) AS `precision`, AVG(recall) recall
+        FROM results
+        -- GROUP BY nlp, algorithm, cost_ratio
+        """
+
+        data["denormalized"] = pd.read_sql(sql, connection)
+
         sql = \
         """
         SELECT nlp, algorithm, cost_ratio, AVG(prec) AS `precision`, AVG(recall) recall
         FROM results
         GROUP BY nlp, algorithm, cost_ratio
         """
-        results = pd.read_sql(sql, connection)
+        
+        data["grouped"] = pd.read_sql(sql, connection)
+
     except Exception as e:
         print(e)
     finally:
         connection.close()
         
-    return results
+    return data
+
 
 def get_best(data, algorithm):
-    accepted_results = data.loc[(data["algorithm"] == algorithm) & 
-         (data["recall"] == data.loc[(data["algorithm"] == 
+    accepted_results = data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
+         (data["grouped"]["recall"] == data["grouped"].loc[(data["grouped"]["algorithm"] == 
                                       algorithm)]["recall"].max())]
 
     return accepted_results.loc[(accepted_results["precision"] == \
                                  accepted_results.loc[(accepted_results["algorithm"] \
                                                                             == algorithm)]["precision"].max())]
-def save_image(image, url='../images/', name = 'default'):
-    image.savefig(url + name)
-#    Image.open(url + name + '.png').convert('L').save(url + name + '.png')
     
-def plot_image(x, results, title="title", ylim = [0, 1.02], xlim = [2, 50.5], 
-               colors="rgbmyc", file_name="name", labels=[], ylabel = "ylabel", 
-               loc="better", markers=".,ov<>"):
-    plt.figure(figsize=(14,13))
-    plt.ylim(ylim)
-    plt.xlim(xlim)
-    plt.xlabel("Misclassification Cost Ratio")
-    plt.ylabel(ylabel)
-    plt.style.use('paper.mplstyle')
-    
-    filled_markers = ('<', 'D', 'o', '|', 'v', '>', 'p', 'd') #' '^', ', '>', '8', 's', 'p', '*', 'h', 'H', , 'd')
-    fillstyles = ('full', 'full', 'full', 'full', 'top', 'none')
-    colors = "rgbk"
-
-    i = 0
-    for record in results:
-        model_name = record[1] + "-" + record[2]
-        plt.plot(x, record[0], label=model_name, c=colors[i])
-        marker = MarkerStyle(marker='o', fillstyle=fillstyles[i])
-        plt.scatter(x, record[0], marker=marker, s=300, c=colors[i]) #, label=model_name)
-        i+=1
-    
-    plt.xticks(x, labels, rotation='vertical')
-    plt.legend(loc=loc, prop={'size':30})
-
-    save_image(plt,'../images/', file_name)
-    plt.show()
-    
-def get_best_by_cost(data, important_metric, algorithm, plot_metric):
-    best_rf_experiment = data.loc[(data["algorithm"] == algorithm) & 
-         (data[important_metric] == data.loc[(data["algorithm"] == 
+def get_best_costly_organised(data, important_metric, algorithm, plot_metric):
+    best_rf_experiment = data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
+         (data["grouped"][important_metric] == data["grouped"].loc[(data["grouped"]["algorithm"] == 
                                       algorithm)][important_metric].max())]["n_experiment"].values[0]
     
-    best_rf_nlp = data.loc[(data["algorithm"] == algorithm) & 
-         (data[important_metric] == data.loc[(data["algorithm"] == 
+    best_rf_nlp = data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
+         (data["grouped"][important_metric] == data["grouped"].loc[(data["grouped"]["algorithm"] == 
                                       algorithm)][important_metric].max())]["nlp"].values[0]
     
-    return np.array(data.loc[(data["algorithm"] == algorithm) & 
-         (data["n_experiment"] == best_rf_experiment) &
-         (data["nlp"] == best_rf_nlp)][plot_metric].values), algorithm, best_rf_nlp
+    return np.array(data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
+         (data["grouped"]["n_experiment"] == best_rf_experiment) &
+         (data["grouped"]["nlp"] == best_rf_nlp)][plot_metric].values), algorithm, best_rf_nlp
+
+
+def get_best_results(data, algorithm, nlp, metric):
+    ida = get_best_configurations(algorithm, nlp)
+    print(ida)
+    return data.loc[(data["algorithm"] == ida[1]) & 
+         (data["nlp"] == ida[0]) &
+         (data["cost_ratio"] == ida[2])][metric]
+
+def get_best_results_by_configuration(algorithm, nlp, data):
+    conf_data = data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
+                      (data["grouped"]["nlp"] == nlp)]
+
+    return conf_data[conf_data["recall"] == conf_data["recall"].max()].sort(["precision"], 
+                     ascending=False).values[0]
+
+def list_best_configurations(data):
+  best_configurations = \
+                      pd.DataFrame(
+                         columns = ['nlp', 'algorithm', 'cost', 'precision', 'recall'])
+
+  for element in itertools.product(data["grouped"]["algorithm"].unique(), 
+                                   data["grouped"]["nlp"].unique()):
+    result = get_best_results_by_configuration(element[0], element[1], data)
+    dir_result = {"nlp": result[0],
+          'algorithm': result[1],
+          'cost': result[2],
+          'precision': result[3],
+          'recall': result[4]}
+
+    best_configurations = best_configurations.append(pd.DataFrame(dir_result, index=[0]))
+
+  return best_configurations
+
+
 
 def are_different(data, factor, metric, threshold = 0.05):
     
     results = []
     tested_values = []
     
-    values = data[factor].unique()
+    values = data["denormalized"][factor].unique()
 
     for value in values:
-      results.append(data.loc[(data[factor] == value)][metric])
+      results.append(data["denormalized"].loc[(data["denormalized"][factor] == value)][metric])
     
     for value, result in zip(values,results):
         print(value, result.mean())
         if mstats.normaltest(result)[1] < 0.05:
             parametric = False
+
+    print()
+    if parametric:
+      print("Parametric test")
+    else:
+      print("NON Parametric test")
     print()
         
     for value, result in zip(values,results):
@@ -115,7 +143,8 @@ def are_different(data, factor, metric, threshold = 0.05):
             if not value == value2 and value2 not in tested_values:
                 tested_values.append(value)
                 if not parametric:
-                    z_stat, p_val = wilcoxon(result, result2, zero_method='wilcox', correction=False)
+                    # z_stat, p_val = wilcoxon(result, result2, zero_method='wilcox', correction=False)
+                    z_stat, p_val = ttest_ind(result, result2, equal_var=False)
                 else:
                     z_stat, p_val = ttest_ind(result, result2, equal_var=False)
                 if p_val < threshold: # 0.05
