@@ -69,13 +69,7 @@ def get_best(data, algorithm):
                                                                             == algorithm)]["precision"].max())]
     
 def get_best_costly_organised(data, important_metric, algorithm, plot_metric):
-    best_rf_experiment = data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
-         (data["grouped"][important_metric] == data["grouped"].loc[(data["grouped"]["algorithm"] == 
-                                      algorithm)][important_metric].max())]["n_experiment"].values[0]
     
-    best_rf_nlp = data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
-         (data["grouped"][important_metric] == data["grouped"].loc[(data["grouped"]["algorithm"] == 
-                                      algorithm)][important_metric].max())]["nlp"].values[0]
     
     return np.array(data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
          (data["grouped"]["n_experiment"] == best_rf_experiment) &
