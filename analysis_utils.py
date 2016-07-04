@@ -37,6 +37,7 @@ def load_results():
         """
         SELECT nlp, algorithm, cost_ratio, prec AS `precision`, recall -- AVG(prec) AS `precision`, AVG(recall) recall
         FROM results
+        WHERE nlp != 'Bigrams'
         -- GROUP BY nlp, algorithm, cost_ratio
         """
 
@@ -46,6 +47,7 @@ def load_results():
         """
         SELECT nlp, algorithm, cost_ratio, AVG(prec) AS `precision`, AVG(recall) recall
         FROM results
+        WHERE nlp != 'Bigrams'
         GROUP BY nlp, algorithm, cost_ratio
         """
         
