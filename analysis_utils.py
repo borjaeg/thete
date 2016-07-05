@@ -70,20 +70,21 @@ def get_best(data, algorithm):
                                  accepted_results.loc[(accepted_results["algorithm"] \
                                                                             == algorithm)]["precision"].max())]
     
-def get_best_costly_organised(data, important_metric, algorithm, plot_metric):
-    
-    
-    return np.array(data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
-         (data["grouped"]["n_experiment"] == best_rf_experiment) &
-         (data["grouped"]["nlp"] == best_rf_nlp)][plot_metric].values), algorithm, best_rf_nlp
+def get_best_costly_organised(data):
 
+  recalls = []
+  precisions = []
 
-def get_best_results(data, algorithm, nlp, metric):
-    ida = get_best_configurations(algorithm, nlp)
-    print(ida)
-    return data.loc[(data["algorithm"] == ida[1]) & 
-         (data["nlp"] == ida[0]) &
-         (data["cost_ratio"] == ida[2])][metric]
+  for m in ["Naive Bayes", "Random Forest", "SVM", "Logistic", "Baseline"]:
+    best = get_best(data, m).values[0]
+    recalls.append((data["grouped"].loc[(data["grouped"]["algorithm"] == m) &
+                   (data["grouped"]["nlp"] == best[0])]["recall"], m, best[0]))
+    
+    precisions.append((data["grouped"].loc[(data["grouped"]["algorithm"] == m) &
+                   (data["grouped"]["nlp"] == best[0])]["precision"], m, best[0]))
+    
+  return recalls, precisions
+
 
 def get_best_results_by_configuration(algorithm, nlp, data):
     conf_data = data["grouped"].loc[(data["grouped"]["algorithm"] == algorithm) & 
