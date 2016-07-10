@@ -4,7 +4,7 @@ from PIL import Image
 from utils import labels, axis_costs, cxlim
 
 
-def save_image(image, url='../images/', name = 'default'):
+def _save_image(image, url='../images/', name = 'default'):
     image.savefig(url + name)
 #    Image.open(url + name + '.png').convert('L').save(url + name + '.png')
     
@@ -12,18 +12,17 @@ def plot_image(results, title="title", ylim = [0, 1.1],
                colors="rgbmyc", file_name="name", ylabel = "ylabel", 
                loc="better", markers=".,ov<>", save=True):
 
+    label_names = []
+    filled_markers = ('<', 'D', 'o', '>', '|', 'v', 'p', 'd') #' '^', ', '>', '8', 's', 'p', '*', 'h', 'H', , 'd')
+    fillstyles = ('full', 'full', 'full', 'full', 'full', 'none')
+    colors = "rgbyk"
+
     plt.figure(figsize=(14,13))
     plt.ylim(ylim)
     plt.xlim(cxlim)
     plt.xlabel("Misclassification Cost Ratio")
     plt.ylabel(ylabel)
     plt.style.use('paper.mplstyle')
-
-    label_names = []
-    
-    filled_markers = ('<', 'D', 'o', '>', '|', 'v', 'p', 'd') #' '^', ', '>', '8', 's', 'p', '*', 'h', 'H', , 'd')
-    fillstyles = ('full', 'full', 'full', 'full', 'full', 'none')
-    colors = "rgbyk"
 
     i = 0
     for record in results:
@@ -44,6 +43,6 @@ def plot_image(results, title="title", ylim = [0, 1.1],
     plt.legend(loc=loc, labels=label_names ,prop={'size':30})
 
     if save == True:
-        save_image(plt,'../images/', file_name)
+        _save_image(plt,'../images/', file_name)
         
     plt.show()
