@@ -1,7 +1,7 @@
 import pymysql.cursors
 import pandas as pd
 
-def get_plague_crop():
+def get_plague_crops():
 
     results = []
     connection = pymysql.connect(host='localhost',
@@ -30,7 +30,7 @@ def get_plague_crop():
     return results 
 
 
-def get_crop():
+def get_crops():
 
     results = []
     connection = pymysql.connect(host='localhost',
@@ -64,7 +64,7 @@ def get_crop():
     return results
 
 
-def get_plague():
+def get_plagues():
 
     results = []
     connection = pymysql.connect(host='localhost',
