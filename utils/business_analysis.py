@@ -96,3 +96,33 @@ def get_plagues():
         connection.close()
 
     return results
+
+def get_tuples():
+
+    results = []
+    connection = pymysql.connect(host='localhost',
+                             user='root',
+                             password='',
+                             db='fitosanitarios',
+                             charset='utf8')
+
+    try:
+        sql = \
+            """
+            SELECT CONCAT(C.CultivosEnFitosanitarios, '-' , EfectosEnPlagas) AS tuple
+            FROM usoautorizado U
+            LEFT JOIN cultivosenfitosanitarios C ON (U.CultivosEnFitosanitariosId = C.CultivosEnFitosanitariosId)
+            LEFT JOIN efectosenplagas E ON (U.EfectosEnPlagasId = E.EfectosEnPlagasId)
+            GROUP BY C.CultivosEnFitosanitariosId, E.EfectosEnPlagasId, UsoAutorizadoRegistro
+            ORDER BY C.CultivosEnFitosanitarios ASC, EfectosEnPlagas ASC; 
+            """
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+
+    except Exception as e:
+        print(e)
+    finally:
+        connection.close()
+
+    return results  
